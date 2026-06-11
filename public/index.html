@@ -365,8 +365,33 @@
   fileZone.addEventListener('drop', e => { if (e.dataTransfer?.files) addFiles(e.dataTransfer.files); });
   fileInput.addEventListener('change', e => { addFiles(e.target.files); fileInput.value = ''; });
 
-  function addFiles(list) {
-    for (const f of list) {
+  // Читаем файл в память немедленно при выборе (фикс Android: браузер хранит
+  // лишь ссылку на временный файл, и система удаляет его, пока заполняется форма).
+  function readToMemoryFile(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const name = file.name || ('photo_' + Date.now() + '.jpg');
+        const type = file.type || 'image/jpeg';
+        try {
+          resolve(new File([reader.result], name, { type }));
+        } catch (e) {
+          const blob = new Blob([reader.result], { type });
+          try { blob.name = name; } catch (_) {}
+          resolve(blob);
+        }
+      };
+      reader.onerror = () => reject(reader.error || new Error('read error'));
+      reader.readAsArrayBuffer(file);
+    });
+  }
+
+  async function addFiles(list) {
+    const incoming = Array.from(list);
+    if (!incoming.length) return;
+    submitBtn.disabled = true;
+    countEl.textContent = 'Обрабатываю фото…';
+    for (const f of incoming) {
       if (files.length >= MAX_FILES) {
         const msg = (cfg.tooManyFilesError || 'Максимум {max} фото').replace('{max}', MAX_FILES);
         showFileError(msg);
@@ -379,8 +404,13 @@
         showFileError(msg);
         continue;
       }
-      files.push(f);
+      try {
+        files.push(await readToMemoryFile(f));   // копия в RAM прямо сейчас
+      } catch (e) {
+        showFileError('Не удалось прочитать «' + (f.name || 'фото') + '» — попробуйте ещё раз');
+      }
     }
+    submitBtn.disabled = false;
     renderPreview();
   }
 
