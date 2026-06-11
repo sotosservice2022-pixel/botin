@@ -1,0 +1,16 @@
+{
+  "name": "photo-print-bot-cf",
+  "version": "1.0.0",
+  "description": "Photo Print Bot — Cloudflare Pages edition (serverless)",
+  "scripts": {
+    "dev": "wrangler pages dev public --port 8788",
+    "deploy": "wrangler pages deploy public --project-name=photo-print-bot",
+    "kv:create": "wrangler kv namespace create FORM_CONFIG",
+    "secrets:put-bot-token": "wrangler pages secret put BOT_TOKEN --project-name=photo-print-bot",
+    "secrets:put-chat-id": "wrangler pages secret put CHAT_ID --project-name=photo-print-bot",
+    "secrets:put-admin-pwd": "wrangler pages secret put ADMIN_PASSWORD --project-name=photo-print-bot"
+  },
+  "devDependencies": {
+    "wrangler": "^3.99.0"
+  }
+}

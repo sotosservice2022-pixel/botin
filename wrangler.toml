@@ -1,0 +1,14 @@
+name = "photo-print-bot"
+compatibility_date = "2025-05-01"
+pages_build_output_dir = "public"
+
+[[kv_namespaces]]
+binding = "FORM_CONFIG"
+id = "39d1116447464a04805085bfc3110c0f"
+
+[vars]
+# Cloudflare Pages free tier: общий размер запроса ≤ 100 МБ.
+# 5 файлов × 20 МБ = 100 МБ — впритык. Если хочешь больше файлов —
+# уменьши размер: например 10 файлов × 9 МБ = 90 МБ.
+MAX_FILES = "5"
+MAX_FILE_SIZE_MB = "20"

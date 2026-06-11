@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Вхід в адмінку — Photo Print</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f4f6fa; color: #1c2129; margin: 0;
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      padding: 20px;
+    }
+    .card { background: #fff; border-radius: 14px; padding: 28px; max-width: 380px; width: 100%;
+      box-shadow: 0 4px 20px rgba(20,30,60,.08);
+    }
+    h1 { font-size: 22px; margin: 0 0 6px; }
+    .sub { color: #6b7280; font-size: 13px; margin-bottom: 20px; }
+    label { font-weight: 600; font-size: 13px; display: block; margin-bottom: 6px; color: #374151; }
+    input[type=password], input[type=text] {
+      width: 100%; padding: 11px 13px; border: 1px solid #e5e7eb; border-radius: 8px;
+      font-size: 16px; font-family: inherit; background: #fafbfc;
+    }
+    input:focus { outline: none; border-color: #0b8aff; background: #fff; }
+    .btn { width: 100%; padding: 11px 16px; border: none; border-radius: 8px;
+      cursor: pointer; font-size: 15px; font-weight: 600; margin-top: 14px;
+      background: #0b8aff; color: #fff;
+    }
+    .btn:hover { background: #0670d9; }
+    .btn:disabled { background: #94a3b8; cursor: not-allowed; }
+    .err { background: #fee2e2; color: #991b1b; padding: 10px 12px; border-radius: 8px;
+      margin-top: 12px; font-size: 13px; display: none;
+    }
+    .err.show { display: block; }
+    .hint { font-size: 12px; color: #6b7280; margin-top: 14px; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>🔐 Вхід в адмінку</h1>
+    <p class="sub">Photo Print Bot — sotosprint.online</p>
+    <form id="loginForm">
+      <label for="password">Пароль</label>
+      <input type="password" id="password" autocomplete="current-password" required autofocus />
+      <div class="err" id="err"></div>
+      <button type="submit" class="btn" id="submitBtn">Увійти</button>
+    </form>
+    <div class="hint">Якщо забули пароль — змініть його в Cloudflare Dashboard в Environment Variables (ADMIN_PASSWORD).</div>
+  </div>
+  <script>
+    const form = document.getElementById('loginForm');
+    const errEl = document.getElementById('err');
+    const btn = document.getElementById('submitBtn');
+    const params = new URLSearchParams(location.search);
+    const returnTo = params.get('return') || '/admin/';
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errEl.classList.remove('show');
+      btn.disabled = true;
+      btn.textContent = 'Перевірка…';
+      try {
+        const r = await fetch('/api/admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ password: document.getElementById('password').value }),
+        });
+        const data = await r.json();
+        if (!data.ok) throw new Error(data.error || 'Помилка входу');
+        location.href = returnTo;
+      } catch (err) {
+        errEl.textContent = '❌ ' + err.message;
+        errEl.classList.add('show');
+        btn.disabled = false;
+        btn.textContent = 'Увійти';
+      }
+    });
+  </script>
+</body>
+</html>

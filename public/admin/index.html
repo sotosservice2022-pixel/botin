@@ -1,0 +1,769 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Админка — Photo Print Bot</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f4f6fa; color: #1c2129; margin: 0; padding: 16px; }
+    .wrap { max-width: 760px; margin: 0 auto; }
+    h1 { font-size: 24px; margin: 0 0 4px; }
+    .sub { color: #6b7280; font-size: 14px; margin-bottom: 18px; }
+    h2 { font-size: 16px; margin: 0 0 12px; color: #374151; }
+    .card { background: #fff; border-radius: 14px; padding: 16px; margin-bottom: 14px;
+      box-shadow: 0 2px 12px rgba(20,30,60,.05); }
+    label { font-weight: 600; font-size: 13px; display: block; margin-bottom: 4px; color: #374151; }
+    input[type=text], input[type=number], textarea, select {
+      width: 100%; padding: 9px 11px; border: 1px solid #e5e7eb; border-radius: 8px;
+      font-size: 14px; font-family: inherit; background: #fafbfc;
+    }
+    input:focus, textarea:focus, select:focus { outline: none; border-color: #0b8aff; background: #fff; }
+    .grid { display: grid; gap: 10px; }
+    .grid-2 { grid-template-columns: 1fr 1fr; }
+    .grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+    @media (max-width: 600px) {
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    }
+    .btn { padding: 9px 16px; border: none; border-radius: 8px; cursor: pointer;
+      font-size: 14px; font-weight: 600; }
+    .btn-primary { background: #0b8aff; color: #fff; }
+    .btn-primary:hover { background: #0670d9; }
+    .btn-secondary { background: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; }
+    .btn-secondary:hover { background: #e5e7eb; }
+    .btn-danger { background: #fee2e2; color: #991b1b; }
+    .btn-danger:hover { background: #fecaca; }
+    .btn-icon { padding: 6px 10px; font-size: 13px; }
+
+    .field { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px;
+      padding: 12px; margin-bottom: 10px; }
+    .field-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .field-head .title { font-weight: 600; flex: 1; font-size: 14px; }
+    .field-head .badge { font-size: 11px; padding: 2px 8px; background: #eff6ff;
+      color: #1d4ed8; border-radius: 99px; font-weight: 500; }
+    .field-actions { display: flex; gap: 6px; }
+    .field-body { display: grid; gap: 8px; }
+    .toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+    .save-bar { position: sticky; bottom: 16px; background: #fff; padding: 12px;
+      border-radius: 12px; box-shadow: 0 4px 20px rgba(20,30,60,.15);
+      display: flex; gap: 10px; align-items: center; }
+    .save-bar .left { flex: 1; font-size: 13px; color: #6b7280; }
+    .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
+      padding: 10px 18px; border-radius: 8px; font-size: 14px; opacity: 0;
+      transition: opacity .2s; pointer-events: none; }
+    .toast.show { opacity: 1; }
+    .toast.success { background: #dcfce7; color: #166534; }
+    .toast.error { background: #fee2e2; color: #991b1b; }
+    .checkbox-inline { display: flex; align-items: center; gap: 6px; }
+    .checkbox-inline input { width: auto; }
+    .options-list { display: grid; gap: 4px; }
+    .options-list .opt-row { display: flex; gap: 6px; }
+    .options-list .opt-row input { flex: 1; }
+    .hint { font-size: 12px; color: #6b7280; margin-top: 4px; }
+    a { color: #0b8aff; }
+
+    /* Большая кнопка-переключатель для формы */
+    .form-toggle-card {
+      padding: 18px;
+      border-radius: 14px;
+      margin-bottom: 14px;
+      transition: background .2s, border .2s;
+      border: 2px solid transparent;
+    }
+    .form-toggle-card.on { background: #ecfdf5; border-color: #a7f3d0; }
+    .form-toggle-card.off { background: #fef2f2; border-color: #fecaca; }
+    .form-toggle-card .head { display: flex; align-items: center; gap: 12px; }
+    .form-toggle-card .indicator {
+      width: 14px; height: 14px; border-radius: 50%;
+      box-shadow: 0 0 0 4px rgba(255,255,255,.5);
+    }
+    .form-toggle-card.on .indicator { background: #16a34a; }
+    .form-toggle-card.off .indicator { background: #dc2626; animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+    .form-toggle-card .title { font-size: 18px; font-weight: 700; flex: 1; }
+    .form-toggle-card .btn-toggle {
+      padding: 10px 18px; font-size: 14px; font-weight: 600; border: none;
+      border-radius: 10px; cursor: pointer;
+    }
+    .form-toggle-card.on .btn-toggle { background: #fee2e2; color: #991b1b; }
+    .form-toggle-card.on .btn-toggle:hover { background: #fecaca; }
+    .form-toggle-card.off .btn-toggle { background: #dcfce7; color: #166534; }
+    .form-toggle-card.off .btn-toggle:hover { background: #bbf7d0; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>⚙️ Адмінка форми</h1>
+  <p class="sub">Змінюй заголовок, додавай і редагуй поля. Не забудь натиснути «Зберегти». <a href="/" target="_blank">Відкрити форму →</a> · <a href="#" onclick="logout(); return false;" style="color:#dc2626;">🚪 Вийти</a></p>
+
+  <div id="formToggleCard" class="form-toggle-card on">
+    <div class="head">
+      <span class="indicator"></span>
+      <div>
+        <div class="title" id="formToggleTitle">Форма принимает заказы</div>
+        <div class="hint" id="formToggleHint" style="margin-top: 2px;"></div>
+      </div>
+      <button type="button" class="btn-toggle" id="formToggleBtn" onclick="toggleForm()">Закрыть</button>
+    </div>
+    <div style="margin-top: 14px;">
+      <label>Сообщение которое видят клиенты когда форма закрыта</label>
+      <input type="text" id="formDisabledMessage" />
+      <div class="hint">Это сообщение покажется на форме вместо полей если её отключить</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>🤖 Telegram-бот</h2>
+    <div class="grid">
+      <div id="botStatus" class="hint" style="padding: 10px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;">Завантаження...</div>
+      <div>
+        <label>Bot Token</label>
+        <input type="password" id="botToken" placeholder="123456:ABC-DEF... (порожньо = використати з Cloudflare Secret BOT_TOKEN)" autocomplete="new-password" />
+        <div class="hint">Отримати: <a href="https://t.me/BotFather" target="_blank">@BotFather</a> → /mybots → твій бот → API Token. <strong>Якщо введеш сюди — KV-override перевизначить env BOT_TOKEN.</strong></div>
+      </div>
+      <div>
+        <label>Chat ID (куди приходять заказы)</label>
+        <input type="text" id="chatId" placeholder="-1001234567890 або 123456789" />
+        <div class="hint">Як отримати: напиши боту /start → відкрий <code>https://api.telegram.org/bot&lt;TOKEN&gt;/getUpdates</code> → знайди <code>"chat":{"id": ...}</code></div>
+      </div>
+      <div>
+        <button class="btn btn-primary" type="button" onclick="saveBot()">💾 Зберегти бота</button>
+        <button class="btn btn-secondary" type="button" onclick="testBot()">🧪 Тест надіслання</button>
+        <button class="btn btn-danger" type="button" onclick="resetBot()">↻ Скинути до env-секретів</button>
+      </div>
+      <div id="botResult" class="hint"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>📋 Нумерация заказов</h2>
+    <div class="grid">
+      <div class="hint">Текущее значение счётчика. Каждый новый заказ получает следующий номер.</div>
+      <div class="grid grid-2">
+        <div>
+          <label>Последний выданный номер</label>
+          <input type="number" id="counterCurrent" min="0" max="99999999" />
+          <div class="hint">Например, если ставишь <code>0</code> — следующий заказ будет <code>#1</code>. Если <code>100</code> — следующий будет <code>#101</code>.</div>
+        </div>
+        <div style="align-self: end;">
+          <button class="btn btn-primary" type="button" onclick="saveCounter()">💾 Сохранить счётчик</button>
+          <button class="btn btn-danger" type="button" onclick="resetCounter()" style="margin-left: 6px;">↻ Сбросить на 0</button>
+        </div>
+      </div>
+      <div id="counterStatus" class="hint"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Заголовок и тексты</h2>
+    <div class="grid">
+      <div>
+        <label>Заголовок</label>
+        <input type="text" id="title" />
+      </div>
+      <div>
+        <label>Подзаголовок</label>
+        <input type="text" id="subtitle" />
+      </div>
+      <div class="grid grid-2">
+        <div>
+          <label>Текст кнопки отправки</label>
+          <input type="text" id="submitText" />
+        </div>
+        <div>
+          <label>Подпись блока с фото</label>
+          <input type="text" id="photosLabel" />
+        </div>
+      </div>
+      <div>
+        <label>Текст внутри кнопки выбора фото</label>
+        <input type="text" id="photosButtonText" />
+        <div class="hint">Жирный текст в центре блока загрузки фото (по умолчанию «Выбрать фото»)</div>
+      </div>
+      <div>
+        <label>Сообщение ошибки телефона</label>
+        <input type="text" id="phoneErrorText" />
+        <div class="hint">Показывается красным под полем, если номер ввели не полностью</div>
+      </div>
+      <div>
+        <label>Сообщение под кнопкой при отправке с неверным телефоном</label>
+        <input type="text" id="phoneSubmitError" />
+        <div class="hint">Показывается под кнопкой «Отправить», если телефон не заполнен полностью</div>
+      </div>
+      <div class="grid grid-2">
+        <div>
+          <label>Сообщение «Заполните это поле»</label>
+          <input type="text" id="requiredFieldError" />
+          <div class="hint">Всплывающая подсказка для обязательных полей</div>
+        </div>
+        <div>
+          <label>Сообщение «Прикрепите фото»</label>
+          <input type="text" id="noPhotosError" />
+          <div class="hint">Показывается если не выбрано ни одного фото</div>
+        </div>
+      </div>
+      <div>
+        <label>Сообщение «Сеть недоступна»</label>
+        <input type="text" id="networkErrorText" />
+        <div class="hint">Показывается при обрыве связи или таймауте загрузки</div>
+      </div>
+      <div>
+        <label>Сообщение «Слишком много фото»</label>
+        <input type="text" id="tooManyFilesError" />
+        <div class="hint">Когда клиент пытается добавить больше фото, чем разрешено. Можно использовать <code>{max}</code></div>
+      </div>
+      <div>
+        <label>Сообщение «Превышен размер файла»</label>
+        <input type="text" id="tooLargeFileError" />
+        <div class="hint">Когда отдельный файл больше лимита. Доступны <code>{name}</code> (имя файла) и <code>{size}</code> (лимит в МБ)</div>
+      </div>
+      <div class="grid grid-2">
+        <div>
+          <label>Таймаут загрузки (секунд)</label>
+          <input type="number" id="uploadTimeoutSec" min="30" max="3600" />
+          <div class="hint">Сколько ждать пока фото загрузятся. По умолчанию 300 (5 минут)</div>
+        </div>
+        <div>
+          <label>Сообщение «Слишком долгая загрузка»</label>
+          <input type="text" id="timeoutErrorText" />
+          <div class="hint">Показывается если истекло время таймаута</div>
+        </div>
+      </div>
+      <div>
+        <label>Текст на кнопке при повторной отправке</label>
+        <input type="text" id="retryingText" />
+        <div class="hint">Когда первая отправка упала и идёт повтор. Можно использовать <code>{attempt}</code> (номер попытки) и <code>{max}</code> (всего попыток)</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Тексты процесса (на кнопках и в форме)</h2>
+    <div class="grid">
+      <div class="grid grid-2">
+        <div>
+          <label>Текст «Загрузка формы…»</label>
+          <input type="text" id="loadingText" />
+          <div class="hint">При первом открытии страницы</div>
+        </div>
+        <div>
+          <label>Текст «Подготовка фото…»</label>
+          <input type="text" id="preparingText" />
+          <div class="hint">Когда идёт сжатие фото перед отправкой</div>
+        </div>
+      </div>
+      <div class="grid grid-2">
+        <div>
+          <label>Текст «Отправляем…»</label>
+          <input type="text" id="sendingText" />
+          <div class="hint">Кнопка во время загрузки</div>
+        </div>
+        <div>
+          <label>Текст «Выбрано N из M»</label>
+          <input type="text" id="selectedCountText" />
+          <div class="hint">Под фото. Доступны <code>{count}</code> и <code>{max}</code></div>
+        </div>
+      </div>
+      <div>
+        <label>Текст «— не выбрано —» в выпадающих списках</label>
+        <input type="text" id="selectNoneOption" />
+        <div class="hint">Только для необязательных select-полей</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Дополнительные тексты ошибок</h2>
+    <div class="grid">
+      <div>
+        <label>«Файлы слишком большие» (превышен общий лимит ~95 МБ)</label>
+        <input type="text" id="bodyTooLargeError" />
+      </div>
+      <div>
+        <label>«Ошибка сервера» (5xx)</label>
+        <input type="text" id="serverErrorText" />
+        <div class="hint">Доступно <code>{status}</code> — код ответа сервера</div>
+      </div>
+      <div class="grid grid-2">
+        <div>
+          <label>«Неверный ответ сервера»</label>
+          <input type="text" id="invalidResponseError" />
+        </div>
+        <div>
+          <label>Общая ошибка отправки</label>
+          <input type="text" id="genericSendError" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Сжатие фото перед отправкой</h2>
+    <div class="grid">
+      <div class="checkbox-inline">
+        <input type="checkbox" id="autoCompress" />
+        <label for="autoCompress" style="margin:0">Автоматически сжимать большие фото</label>
+      </div>
+      <div class="hint">
+        Файлы больше 3 МБ будут пережаты до заданных параметров. Это резко повышает надёжность доставки на мобильном интернете.
+        Для печати до A3 разница незаметна на глаз.
+      </div>
+      <div class="grid grid-2">
+        <div>
+          <label>Макс. сторона (px)</label>
+          <input type="number" id="compressMaxSide" min="800" max="8000" />
+          <div class="hint">2400 — для печати до 13×18; 4000 — до A3 (по умолчанию); 6000+ — для огромных принтов</div>
+        </div>
+        <div>
+          <label>Качество JPEG (1-100)</label>
+          <input type="number" id="compressQuality" min="50" max="100" />
+          <div class="hint">95 — визуально идентично оригиналу; 90 — едва заметно; 80 — заметно при увеличении</div>
+        </div>
+      </div>
+      <div>
+        <label>Сообщение после успешной отправки</label>
+        <input type="text" id="successText" />
+        <div class="hint">Можно использовать <code>{orderId}</code> и <code>{count}</code></div>
+      </div>
+      <div>
+        <label>Подсказка под кнопкой выбора фото</label>
+        <input type="text" id="photosHint" />
+        <div class="hint">Можно использовать <code>{maxFiles}</code> и <code>{maxSize}</code></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Поля формы</h2>
+    <div class="toolbar">
+      <button class="btn btn-secondary btn-icon" onclick="addField('text')">+ Текст</button>
+      <button class="btn btn-secondary btn-icon" onclick="addField('tel')">+ Телефон</button>
+      <button class="btn btn-secondary btn-icon" onclick="addField('email')">+ Email</button>
+      <button class="btn btn-secondary btn-icon" onclick="addField('number')">+ Число</button>
+      <button class="btn btn-secondary btn-icon" onclick="addField('textarea')">+ Длинный текст</button>
+      <button class="btn btn-secondary btn-icon" onclick="addField('select')">+ Выпадающий список</button>
+      <button class="btn btn-secondary btn-icon" onclick="addField('checkbox')">+ Галочка</button>
+    </div>
+    <div id="fields"></div>
+  </div>
+
+  <div class="save-bar">
+    <div class="left" id="status">Загрузка…</div>
+    <button class="btn btn-secondary" onclick="loadConfig()">Отмена</button>
+    <button class="btn btn-primary" onclick="saveAll()">💾 Сохранить</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const TYPE_LABELS = {
+  text: 'Текст', tel: 'Телефон', email: 'Email', number: 'Число',
+  textarea: 'Длинный текст', select: 'Выпадающий список', checkbox: 'Галочка'
+};
+
+let cfg = null;
+
+async function toggleForm() {
+  const wasEnabled = cfg.formEnabled !== false;
+  const action = wasEnabled ? 'ЗАКРЫТЬ' : 'ОТКРЫТЬ';
+  if (!confirm(`${action} приём заказов? ${wasEnabled ? 'Клиенты не смогут отправлять заказы.' : 'Клиенты снова смогут отправлять заказы.'}`)) return;
+
+  // Грабим текст-сообщение из инпута
+  cfg.formDisabledMessage = document.getElementById('formDisabledMessage').value;
+  cfg.formEnabled = !wasEnabled;
+
+  try {
+    const r = await fetch('/api/admin/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(cfg),
+    });
+    const data = await r.json();
+    if (!data.ok) throw new Error(data.error || 'Ошибка');
+    render();
+    toast(cfg.formEnabled ? '✅ Форма открыта' : '🚫 Форма закрыта', cfg.formEnabled ? 'success' : 'error');
+  } catch (e) {
+    cfg.formEnabled = wasEnabled; // откатываем
+    toast('❌ ' + e.message, 'error');
+  }
+}
+
+async function loadConfig() {
+  setStatus('Загрузка…');
+  try {
+    const r = await fetch('/api/admin/config', { credentials: 'include' });
+    if (r.status === 401) {
+      location.href = '/admin/login/?return=' + encodeURIComponent(location.pathname);
+      return;
+    }
+    if (!r.ok) throw new Error('Помилка ' + r.status);
+    const data = await r.json();
+    cfg = data.config;
+    render();
+    await loadCounter();
+    setStatus('Завантажено');
+  } catch (e) {
+    setStatus('Помилка: ' + e.message, true);
+  }
+}
+
+async function logout() {
+  if (!confirm('Вийти з адмінки?')) return;
+  await fetch('/api/admin/logout', { method: 'POST', credentials: 'include' });
+  location.href = '/admin/login/';
+}
+
+async function loadCounter() {
+  try {
+    const r = await fetch('/api/admin/counter', { credentials: 'include' });
+    if (!r.ok) return;
+    const data = await r.json();
+    document.getElementById('counterCurrent').value = data.current;
+    document.getElementById('counterStatus').textContent =
+      `Последний заказ: #${data.current}. Следующий получит номер #${data.next}.`;
+  } catch (e) {
+    document.getElementById('counterStatus').textContent = 'Не удалось загрузить счётчик: ' + e.message;
+  }
+}
+
+async function saveCounter() {
+  const value = parseInt(document.getElementById('counterCurrent').value, 10);
+  if (!Number.isFinite(value) || value < 0) {
+    toast('❌ Введите корректное число ≥ 0', 'error');
+    return;
+  }
+  if (!confirm(`Установить счётчик на ${value}? Следующий заказ будет #${value + 1}.`)) return;
+  try {
+    const r = await fetch('/api/admin/counter', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ value }),
+    });
+    const data = await r.json();
+    if (!data.ok) throw new Error(data.error || 'Ошибка');
+    toast('✅ Счётчик сохранён', 'success');
+    await loadCounter();
+  } catch (e) {
+    toast('❌ ' + e.message, 'error');
+  }
+}
+
+async function resetCounter() {
+  if (!confirm('Сбросить счётчик на 0? Следующий заказ будет #1.')) return;
+  document.getElementById('counterCurrent').value = 0;
+  await saveCounter();
+}
+
+// === Telegram-бот (KV-override) ===
+async function loadBot() {
+  try {
+    const r = await fetch('/api/admin/bot', { credentials: 'include' });
+    if (r.status === 401) { location.href = '/admin/login/'; return; }
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    const status = document.getElementById('botStatus');
+    status.innerHTML = `
+      <div><strong>Token:</strong> ${d.hasToken ? `<code>${d.tokenMasked}</code> ✅` : '<span style="color:#dc2626">не задано ❌</span>'}</div>
+      <div><strong>chat_id:</strong> ${d.chatId ? `<code>${d.chatId}</code> ✅` : '<span style="color:#dc2626">не задано ❌</span>'}</div>
+      <div><strong>Джерело:</strong> ${d.source === 'kv' ? '🔓 KV (через адмінку)' : '🔒 ENV (Cloudflare Secrets)'}</div>
+    `;
+    document.getElementById('chatId').value = d.chatId || '';
+    document.getElementById('botToken').value = ''; // токен не показуємо
+  } catch (e) {
+    document.getElementById('botStatus').textContent = 'Помилка: ' + e.message;
+  }
+}
+
+async function saveBot() {
+  const botToken = document.getElementById('botToken').value.trim();
+  const chatId = document.getElementById('chatId').value.trim();
+  const result = document.getElementById('botResult');
+  result.textContent = 'Зберігаю...';
+  try {
+    const body = { chatId };
+    if (botToken) body.botToken = botToken;
+    const r = await fetch('/api/admin/bot', {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.error || 'Помилка');
+    result.textContent = '✅ Збережено';
+    result.style.color = '#16a34a';
+    document.getElementById('botToken').value = '';
+    loadBot();
+  } catch (e) {
+    result.textContent = '❌ ' + e.message;
+    result.style.color = '#dc2626';
+  }
+}
+
+async function testBot() {
+  const result = document.getElementById('botResult');
+  result.textContent = 'Тестую...';
+  try {
+    const r = await fetch('/api/admin/bot', { method: 'PUT', credentials: 'include' });
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.error || 'Помилка');
+    result.textContent = '✅ Тест успішний — повідомлення в Telegram';
+    result.style.color = '#16a34a';
+  } catch (e) {
+    result.textContent = '❌ ' + e.message;
+    result.style.color = '#dc2626';
+  }
+}
+
+async function resetBot() {
+  if (!confirm('Скинути KV-override? Тоді знову буде використовуватись BOT_TOKEN/CHAT_ID з Cloudflare Secrets.')) return;
+  try {
+    const r = await fetch('/api/admin/bot', {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'reset' }),
+    });
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.error || 'Помилка');
+    document.getElementById('botResult').textContent = '✅ Скинуто';
+    document.getElementById('botResult').style.color = '#16a34a';
+    loadBot();
+  } catch (e) {
+    document.getElementById('botResult').textContent = '❌ ' + e.message;
+    document.getElementById('botResult').style.color = '#dc2626';
+  }
+}
+
+function setStatus(text, isError = false) {
+  const el = document.getElementById('status');
+  el.textContent = text;
+  el.style.color = isError ? '#991b1b' : '#6b7280';
+}
+
+function render() {
+  document.getElementById('title').value = cfg.title || '';
+  document.getElementById('subtitle').value = cfg.subtitle || '';
+
+  // Form toggle UI
+  const enabled = cfg.formEnabled !== false; // по умолчанию true
+  const card = document.getElementById('formToggleCard');
+  card.className = 'form-toggle-card ' + (enabled ? 'on' : 'off');
+  document.getElementById('formToggleTitle').textContent = enabled
+    ? '✅ Форма принимает заказы'
+    : '🚫 Форма закрыта';
+  document.getElementById('formToggleHint').textContent = enabled
+    ? 'Клиенты могут отправлять заказы.'
+    : 'Клиенты видят сообщение «закрыто» вместо формы. Сервер отклоняет любые заказы.';
+  document.getElementById('formToggleBtn').textContent = enabled
+    ? 'Закрыть приём'
+    : 'Открыть приём';
+  document.getElementById('formDisabledMessage').value = cfg.formDisabledMessage || '';
+  document.getElementById('submitText').value = cfg.submitText || '';
+  document.getElementById('successText').value = cfg.successText || '';
+  document.getElementById('photosLabel').value = cfg.photosLabel || '';
+  document.getElementById('photosButtonText').value = cfg.photosButtonText || '';
+  document.getElementById('photosHint').value = cfg.photosHint || '';
+  document.getElementById('phoneErrorText').value = cfg.phoneErrorText || '';
+  document.getElementById('phoneSubmitError').value = cfg.phoneSubmitError || '';
+  document.getElementById('requiredFieldError').value = cfg.requiredFieldError || '';
+  document.getElementById('noPhotosError').value = cfg.noPhotosError || '';
+  document.getElementById('networkErrorText').value = cfg.networkErrorText || '';
+  document.getElementById('tooManyFilesError').value = cfg.tooManyFilesError || '';
+  document.getElementById('tooLargeFileError').value = cfg.tooLargeFileError || '';
+  document.getElementById('uploadTimeoutSec').value = cfg.uploadTimeoutSec || 300;
+  document.getElementById('timeoutErrorText').value = cfg.timeoutErrorText || '';
+  document.getElementById('retryingText').value = cfg.retryingText || '';
+  document.getElementById('loadingText').value = cfg.loadingText || '';
+  document.getElementById('preparingText').value = cfg.preparingText || '';
+  document.getElementById('sendingText').value = cfg.sendingText || '';
+  document.getElementById('selectedCountText').value = cfg.selectedCountText || '';
+  document.getElementById('selectNoneOption').value = cfg.selectNoneOption || '';
+  document.getElementById('bodyTooLargeError').value = cfg.bodyTooLargeError || '';
+  document.getElementById('serverErrorText').value = cfg.serverErrorText || '';
+  document.getElementById('invalidResponseError').value = cfg.invalidResponseError || '';
+  document.getElementById('genericSendError').value = cfg.genericSendError || '';
+  document.getElementById('autoCompress').checked = cfg.autoCompress !== false;
+  document.getElementById('compressMaxSide').value = cfg.compressMaxSide || 4000;
+  document.getElementById('compressQuality').value = cfg.compressQuality || 95;
+
+  const wrap = document.getElementById('fields');
+  wrap.innerHTML = '';
+  cfg.fields.forEach((f, idx) => wrap.appendChild(renderField(f, idx)));
+}
+
+function renderField(f, idx) {
+  const div = document.createElement('div');
+  div.className = 'field';
+  const isSelect = f.type === 'select';
+  const isText = ['text','tel','email','number','textarea'].includes(f.type);
+
+  div.innerHTML = `
+    <div class="field-head">
+      <span class="badge">${TYPE_LABELS[f.type] || f.type}</span>
+      <div class="title">${escapeHtml(f.label || '(без названия)')}</div>
+      <div class="field-actions">
+        <button class="btn btn-secondary btn-icon" onclick="moveField(${idx}, -1)" ${idx===0?'disabled':''}>↑</button>
+        <button class="btn btn-secondary btn-icon" onclick="moveField(${idx}, 1)" ${idx===cfg.fields.length-1?'disabled':''}>↓</button>
+        <button class="btn btn-danger btn-icon" onclick="removeField(${idx})">Удалить</button>
+      </div>
+    </div>
+    <div class="field-body">
+      <div class="grid grid-2">
+        <div>
+          <label>Подпись (видна клиенту)</label>
+          <input type="text" data-prop="label" value="${escapeAttr(f.label || '')}" />
+        </div>
+        <div>
+          <label>ID (только латиница, без пробелов)</label>
+          <input type="text" data-prop="id" value="${escapeAttr(f.id || '')}" />
+        </div>
+      </div>
+      ${isText ? `
+        <div class="grid grid-2">
+          <div>
+            <label>Подсказка внутри поля</label>
+            <input type="text" data-prop="placeholder" value="${escapeAttr(f.placeholder || '')}" />
+          </div>
+          <div>
+            <label>Макс. длина (символов)</label>
+            <input type="number" data-prop="maxLength" value="${f.maxLength || ''}" />
+          </div>
+        </div>
+      ` : ''}
+      ${isSelect ? `
+        <div>
+          <label>Варианты (по одному в строке)</label>
+          <textarea data-prop="optionsText" rows="4">${escapeHtml((f.options||[]).join('\n'))}</textarea>
+        </div>
+      ` : ''}
+      <div class="checkbox-inline">
+        <input type="checkbox" id="req_${idx}" data-prop="required" ${f.required?'checked':''} />
+        <label for="req_${idx}" style="margin:0">Обязательное поле</label>
+      </div>
+    </div>
+  `;
+
+  // Live update
+  div.querySelectorAll('[data-prop]').forEach(el => {
+    el.addEventListener('input', () => updateField(idx, div));
+    if (el.type === 'checkbox') el.addEventListener('change', () => updateField(idx, div));
+  });
+
+  return div;
+}
+
+function updateField(idx, div) {
+  const f = cfg.fields[idx];
+  div.querySelectorAll('[data-prop]').forEach(el => {
+    const key = el.dataset.prop;
+    if (key === 'optionsText') {
+      f.options = el.value.split('\n').map(s => s.trim()).filter(Boolean);
+    } else if (el.type === 'checkbox') {
+      f[key] = el.checked;
+    } else if (el.type === 'number') {
+      const n = parseInt(el.value, 10);
+      f[key] = isNaN(n) ? null : n;
+    } else {
+      f[key] = el.value;
+    }
+  });
+  // Обновим заголовок
+  const titleEl = div.querySelector('.field-head .title');
+  if (titleEl) titleEl.textContent = f.label || '(без названия)';
+}
+
+function addField(type) {
+  let id = type + (cfg.fields.length + 1);
+  while (cfg.fields.some(f => f.id === id)) id += '_';
+  const f = { id, type, label: 'Новое поле', required: false };
+  if (type === 'select') f.options = ['Вариант 1', 'Вариант 2'];
+  if (['text','tel','email','textarea'].includes(type)) f.placeholder = '';
+  cfg.fields.push(f);
+  render();
+}
+
+function removeField(idx) {
+  if (!confirm(`Удалить поле «${cfg.fields[idx].label}»?`)) return;
+  cfg.fields.splice(idx, 1);
+  render();
+}
+
+function moveField(idx, dir) {
+  const target = idx + dir;
+  if (target < 0 || target >= cfg.fields.length) return;
+  [cfg.fields[idx], cfg.fields[target]] = [cfg.fields[target], cfg.fields[idx]];
+  render();
+}
+
+async function saveAll() {
+  // Сначала забираем актуальные значения с верхних полей
+  cfg.title = document.getElementById('title').value;
+  cfg.subtitle = document.getElementById('subtitle').value;
+  cfg.formDisabledMessage = document.getElementById('formDisabledMessage').value;
+  cfg.submitText = document.getElementById('submitText').value;
+  cfg.successText = document.getElementById('successText').value;
+  cfg.photosLabel = document.getElementById('photosLabel').value;
+  cfg.photosButtonText = document.getElementById('photosButtonText').value;
+  cfg.photosHint = document.getElementById('photosHint').value;
+  cfg.phoneErrorText = document.getElementById('phoneErrorText').value;
+  cfg.phoneSubmitError = document.getElementById('phoneSubmitError').value;
+  cfg.requiredFieldError = document.getElementById('requiredFieldError').value;
+  cfg.noPhotosError = document.getElementById('noPhotosError').value;
+  cfg.networkErrorText = document.getElementById('networkErrorText').value;
+  cfg.tooManyFilesError = document.getElementById('tooManyFilesError').value;
+  cfg.tooLargeFileError = document.getElementById('tooLargeFileError').value;
+  cfg.uploadTimeoutSec = parseInt(document.getElementById('uploadTimeoutSec').value, 10) || 300;
+  cfg.timeoutErrorText = document.getElementById('timeoutErrorText').value;
+  cfg.retryingText = document.getElementById('retryingText').value;
+  cfg.loadingText = document.getElementById('loadingText').value;
+  cfg.preparingText = document.getElementById('preparingText').value;
+  cfg.sendingText = document.getElementById('sendingText').value;
+  cfg.selectedCountText = document.getElementById('selectedCountText').value;
+  cfg.selectNoneOption = document.getElementById('selectNoneOption').value;
+  cfg.bodyTooLargeError = document.getElementById('bodyTooLargeError').value;
+  cfg.serverErrorText = document.getElementById('serverErrorText').value;
+  cfg.invalidResponseError = document.getElementById('invalidResponseError').value;
+  cfg.genericSendError = document.getElementById('genericSendError').value;
+  cfg.autoCompress = document.getElementById('autoCompress').checked;
+  cfg.compressMaxSide = parseInt(document.getElementById('compressMaxSide').value, 10) || 4000;
+  cfg.compressQuality = parseInt(document.getElementById('compressQuality').value, 10) || 95;
+
+  // Чистим maxLength=null
+  cfg.fields.forEach(f => { if (f.maxLength == null) delete f.maxLength; });
+
+  setStatus('Сохраняю…');
+  try {
+    const r = await fetch('/api/admin/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(cfg),
+    });
+    const data = await r.json();
+    if (!data.ok) throw new Error(data.error || 'Ошибка сохранения');
+    toast('✅ Сохранено', 'success');
+    setStatus('Сохранено ' + new Date().toLocaleTimeString('ru-RU'));
+  } catch (e) {
+    toast('❌ ' + e.message, 'error');
+    setStatus('Ошибка: ' + e.message, true);
+  }
+}
+
+function toast(msg, kind) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + kind;
+  setTimeout(() => t.className = 'toast ' + kind, 2200);
+}
+
+function escapeHtml(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function escapeAttr(s) { return escapeHtml(s); }
+
+loadConfig();
+loadBot();
+</script>
+</body>
+</html>

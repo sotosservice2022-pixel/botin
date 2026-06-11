@@ -1,0 +1,678 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b8aff" />
+  <title>Печать фото</title>
+  <style>
+    :root {
+      --accent: #0b8aff; --accent-dark: #0670d9;
+      --bg: #f4f6fa; --card: #fff; --text: #1c2129; --muted: #6b7280;
+      --border: #e5e7eb; --success: #16a34a; --error: #dc2626;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg); color: var(--text); min-height: 100vh; padding: 16px;
+      padding-bottom: calc(env(safe-area-inset-bottom) + 88px); }
+    .wrap { max-width: 520px; margin: 0 auto; }
+    h1 { font-size: 22px; margin: 8px 0 4px; font-weight: 700; }
+    .sub { color: var(--muted); margin-bottom: 20px; font-size: 14px; }
+    .card { background: var(--card); border-radius: 16px; padding: 18px;
+      box-shadow: 0 4px 20px rgba(20, 30, 60, 0.06); margin-bottom: 14px; }
+    label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px; }
+    label .req { color: var(--error); margin-left: 2px; }
+    input[type="text"], input[type="tel"], input[type="email"], input[type="number"],
+    textarea, select {
+      width: 100%; padding: 12px 14px; border: 1px solid var(--border);
+      border-radius: 10px; font-size: 16px; font-family: inherit;
+      background: #fafbfc; transition: border-color .15s, background .15s;
+    }
+    input:focus, textarea:focus, select:focus { outline: none; border-color: var(--accent); background: #fff; }
+    textarea { resize: vertical; min-height: 80px; }
+    .row { margin-bottom: 14px; }
+    .row:last-child { margin-bottom: 0; }
+    .checkbox-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+    .checkbox-row input { width: 20px; height: 20px; }
+    .checkbox-row label { margin: 0; font-weight: 500; }
+
+    .field-error {
+      color: var(--error);
+      font-size: 12px;
+      margin-top: 4px;
+      display: none;
+      animation: fadeIn .15s;
+    }
+    .field-error.show { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-2px); } to { opacity: 1; transform: translateY(0); } }
+    input.invalid { border-color: var(--error) !important; }
+
+    .file-zone { border: 2px dashed var(--border); border-radius: 14px; padding: 22px 14px;
+      text-align: center; background: #fafbfc; cursor: pointer; transition: border-color .15s, background .15s; }
+    .file-zone:hover, .file-zone.drag { border-color: var(--accent); background: #f0f7ff; }
+    .file-zone .icon { font-size: 32px; margin-bottom: 6px; }
+    .file-zone .hint { color: var(--muted); font-size: 13px; margin-top: 4px; }
+    input[type="file"] { display: none; }
+
+    .preview {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+      gap: 8px; margin-top: 12px;
+      max-height: 280px; overflow-y: auto; padding: 4px;
+      scroll-behavior: smooth;
+    }
+    .preview-item { position: relative; aspect-ratio: 1; border-radius: 8px;
+      overflow: hidden; background: #eef0f3; }
+    .preview-item img { width: 100%; height: 100%; object-fit: cover; }
+    .preview-item button { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px;
+      border-radius: 50%; border: none; background: rgba(0,0,0,.65); color: #fff;
+      font-size: 14px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .count { font-size: 13px; color: var(--muted); margin-top: 8px; }
+    .file-error {
+      margin-top: 10px;
+      padding: 10px 12px;
+      background: #fef2f2;
+      color: var(--error);
+      border: 1px solid #fecaca;
+      border-radius: 10px;
+      font-size: 13px;
+      display: none;
+      animation: fadeIn .15s;
+    }
+    .file-error.show { display: block; }
+
+    /* Sticky submit bar — кнопка всегда видна внизу */
+    .submit-bar {
+      position: sticky;
+      bottom: 0;
+      background: linear-gradient(to top, var(--bg) 70%, rgba(244,246,250,0));
+      padding: 12px 0 calc(env(safe-area-inset-bottom) + 4px);
+      margin-top: 4px;
+      z-index: 10;
+    }
+    button.submit { width: 100%; padding: 14px; background: var(--accent); color: #fff;
+      border: none; border-radius: 12px; font-size: 16px; font-weight: 600;
+      cursor: pointer; transition: background .15s, transform .05s;
+      box-shadow: 0 4px 16px rgba(11, 138, 255, 0.25); }
+    button.submit:hover:not(:disabled) { background: var(--accent-dark); }
+    button.submit:active:not(:disabled) { transform: scale(.99); }
+    button.submit:disabled { background: #9ca3af; cursor: not-allowed; box-shadow: none; }
+
+    .status { margin-top: 8px; padding: 12px 14px; border-radius: 10px; font-size: 14px; display: none; }
+    .status.show { display: block; }
+    .status.success { background: #ecfdf5; color: var(--success); border: 1px solid #a7f3d0; }
+    .status.error { background: #fef2f2; color: var(--error); border: 1px solid #fecaca; }
+
+    .progress { display: none; height: 6px; background: #e5e7eb; border-radius: 3px;
+      overflow: hidden; margin-top: 6px; }
+    .progress.show { display: block; }
+    .progress-bar { height: 100%; width: 0; background: var(--accent); transition: width .2s; }
+
+    .loading { text-align: center; padding: 40px; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="wrap" id="app">
+    <div class="loading" id="loadingMsg">Загрузка формы…</div>
+  </div>
+
+<script>
+(async () => {
+  // Загружаем конфиг с авто-повтором: если интернета нет в момент открытия,
+  // ждём появления сети и пробуем снова.
+  async function loadCfgWithRetry() {
+    let lastErr;
+    for (let i = 0; i < 6; i++) {
+      try {
+        const r = await fetch('/api/form?t=' + Date.now(), { cache: 'no-store' });
+        if (r.ok) return await r.json();
+        lastErr = new Error('HTTP ' + r.status);
+      } catch (e) {
+        lastErr = e;
+      }
+      // ждём online или 2 секунды
+      await new Promise(resolve => {
+        const onOnline = () => { window.removeEventListener('online', onOnline); resolve(); };
+        window.addEventListener('online', onOnline);
+        setTimeout(() => { window.removeEventListener('online', onOnline); resolve(); }, 2000);
+      });
+    }
+    throw lastErr || new Error('Не удалось загрузить форму');
+  }
+
+  let cfg;
+  try {
+    cfg = await loadCfgWithRetry();
+  } catch (e) {
+    document.querySelector('.loading').textContent = 'Не удалось загрузить форму. Проверьте интернет и обновите страницу.';
+    return;
+  }
+
+  const MAX_FILES = cfg.limits.maxFiles;
+  const MAX_FILE_SIZE = cfg.limits.maxFileSizeMB * 1024 * 1024;
+
+  // Если админ выключил форму — показываем сообщение вместо формы
+  if (cfg.formEnabled === false) {
+    document.getElementById('app').innerHTML = `
+      <div class="card" style="text-align: center; padding: 40px 20px; font-size: 16px; line-height: 1.5;">
+        ${escapeHtml(cfg.formDisabledMessage || '🚫 Форма временно не принимает заказы.')}
+      </div>
+    `;
+    return;
+  }
+
+  // Сразу обновляем текст загрузки если кастомный
+  const loadingEl = document.getElementById('loadingMsg');
+  if (loadingEl && cfg.loadingText) loadingEl.textContent = cfg.loadingText;
+
+  document.title = stripEmoji(cfg.title) || 'Форма';
+
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <h1>${escapeHtml(cfg.title || '')}</h1>
+    <p class="sub">${escapeHtml(cfg.subtitle || '')}</p>
+    <form id="orderForm" autocomplete="on">
+      <div class="card" id="fieldsCard"></div>
+      <div class="card">
+        <label>${escapeHtml(cfg.photosLabel || 'Фото')}</label>
+        <label for="photos" class="file-zone" id="fileZone">
+          <div class="icon">📷</div>
+          <div><strong>${escapeHtml(cfg.photosButtonText || 'Выбрать фото')}</strong></div>
+          <div class="hint">${escapeHtml((cfg.photosHint || '').replace('{maxFiles}', MAX_FILES).replace('{maxSize}', cfg.limits.maxFileSizeMB))}</div>
+        </label>
+        <input type="file" id="photos" name="photos" accept="image/*" multiple />
+        <div class="preview" id="preview"></div>
+        <div class="count" id="count"></div>
+        <div class="file-error" id="fileError"></div>
+      </div>
+      <div class="submit-bar">
+        <button type="submit" class="submit" id="submitBtn">${escapeHtml(cfg.submitText || 'Отправить')}</button>
+        <div class="progress" id="progress"><div class="progress-bar" id="progressBar"></div></div>
+        <div class="status" id="status"></div>
+      </div>
+    </form>
+  `;
+
+  // Рендер полей по конфигу
+  const fieldsCard = document.getElementById('fieldsCard');
+  for (const f of cfg.fields) {
+    const wrap = document.createElement('div');
+    wrap.className = f.type === 'checkbox' ? 'checkbox-row' : 'row';
+    const required = f.required ? 'required' : '';
+    const ml = f.maxLength ? `maxlength="${f.maxLength}"` : '';
+    const ph = f.placeholder ? `placeholder="${escapeAttr(f.placeholder)}"` : '';
+    const star = f.required ? ' <span class="req">*</span>' : '';
+    const labelHtml = `${escapeHtml(f.label)}${star}`;
+
+    if (f.type === 'textarea') {
+      wrap.innerHTML = `<label for="f_${f.id}">${labelHtml}</label>
+        <textarea id="f_${f.id}" name="${f.id}" ${ph} ${required} ${ml}></textarea>`;
+    } else if (f.type === 'select') {
+      const opts = (f.options || []).map(o => `<option value="${escapeAttr(o)}">${escapeHtml(o)}</option>`).join('');
+      const blank = f.required ? '' : `<option value="">${escapeHtml(cfg.selectNoneOption || '— не выбрано —')}</option>`;
+      wrap.innerHTML = `<label for="f_${f.id}">${labelHtml}</label>
+        <select id="f_${f.id}" name="${f.id}" ${required}>${blank}${opts}</select>`;
+    } else if (f.type === 'checkbox') {
+      wrap.innerHTML = `<input type="checkbox" id="f_${f.id}" name="${f.id}" ${required} />
+        <label for="f_${f.id}">${labelHtml}</label>`;
+    } else if (f.type === 'tel') {
+      wrap.innerHTML = `<label for="f_${f.id}">${labelHtml}</label>
+        <input type="tel" id="f_${f.id}" name="${f.id}" inputmode="tel" autocomplete="tel" ${required} ${ml} />`;
+    } else {
+      wrap.innerHTML = `<label for="f_${f.id}">${labelHtml}</label>
+        <input type="${f.type}" id="f_${f.id}" name="${f.id}" ${ph} ${required} ${ml} />`;
+    }
+    fieldsCard.appendChild(wrap);
+
+    // Кастомное сообщение «Заполните это поле»
+    if (f.required) {
+      const inp = document.getElementById('f_' + f.id);
+      const msg = cfg.requiredFieldError || 'Заполните это поле';
+      const setMsg = () => { if (!inp.validity.valid) inp.setCustomValidity(msg); };
+      inp.addEventListener('invalid', setMsg);
+      inp.addEventListener('input', () => inp.setCustomValidity(''));
+      inp.addEventListener('change', () => inp.setCustomValidity(''));
+    }
+
+    if (f.type === 'tel') {
+      attachPhoneMask(document.getElementById('f_' + f.id));
+    } else if (f.type === 'text' && isNameField(f.id)) {
+      attachNameFilter(document.getElementById('f_' + f.id));
+    }
+  }
+
+  // === Поля-имена: запрет цифр ===
+  function isNameField(id) {
+    return ['name', 'firstname', 'lastname', 'client', 'customer'].includes((id || '').toLowerCase());
+  }
+  function attachNameFilter(el) {
+    el.addEventListener('keydown', (e) => {
+      // Блокируем нажатие цифры
+      if (e.key.length === 1 && /\d/.test(e.key)) e.preventDefault();
+    });
+    el.addEventListener('input', () => {
+      // Чистим цифры если что-то вставили (paste)
+      const cursor = el.selectionStart;
+      const oldLen = el.value.length;
+      const cleaned = el.value.replace(/\d+/g, '');
+      if (cleaned !== el.value) {
+        el.value = cleaned;
+        const newPos = Math.max(0, cursor - (oldLen - cleaned.length));
+        try { el.setSelectionRange(newPos, newPos); } catch {}
+      }
+    });
+  }
+
+  // === Маска телефона +380 ===
+  function attachPhoneMask(el) {
+    const PREFIX = '+380 ';
+    el.value = PREFIX;
+    el.placeholder = '+380 (00) 000 00 00';
+
+    // Создаём блок ошибки под полем
+    const errorEl = document.createElement('div');
+    errorEl.className = 'field-error';
+    errorEl.textContent = cfg.phoneErrorText || 'Введите номер полностью (12 цифр)';
+    el.parentNode.appendChild(errorEl);
+
+    function isValid() {
+      const digits = el.value.replace(/\D/g, '');
+      return digits.length === 12 && digits.startsWith('380');
+    }
+    function setError(show) {
+      errorEl.classList.toggle('show', show);
+      el.classList.toggle('invalid', show);
+    }
+
+    el.addEventListener('focus', () => {
+      if (!el.value.startsWith('+380')) el.value = PREFIX;
+      requestAnimationFrame(() => {
+        const pos = Math.max(el.selectionStart, PREFIX.length);
+        try { el.setSelectionRange(pos, pos); } catch {}
+      });
+    });
+
+    el.addEventListener('input', () => {
+      let v = el.value;
+      v = v.replace(/[^\d+\s()\-]/g, '');
+      if (!v.startsWith('+380')) {
+        const digits = v.replace(/\D/g, '').replace(/^380/, '');
+        v = PREFIX + digits;
+      }
+      if (v.length > 20) v = v.slice(0, 20);
+      if (el.value !== v) {
+        const cursor = el.selectionStart;
+        el.value = v;
+        try { el.setSelectionRange(Math.max(cursor, PREFIX.length), Math.max(cursor, PREFIX.length)); } catch {}
+      }
+      // Если сейчас валидно — скрываем ошибку
+      if (isValid()) setError(false);
+    });
+
+    el.addEventListener('blur', () => {
+      // Если ввели что-то и оно неполное — показываем ошибку
+      const digits = el.value.replace(/\D/g, '');
+      if (digits.length > 3 && !isValid()) {
+        setError(true);
+      } else {
+        setError(false);
+      }
+    });
+
+    el.addEventListener('keydown', (e) => {
+      if (e.key.length === 1 && !/[\d+\s()\-]/.test(e.key)) {
+        e.preventDefault();
+        return;
+      }
+      if ((e.key === 'Backspace' && el.selectionStart <= PREFIX.length && el.selectionEnd <= PREFIX.length) ||
+          (e.key === 'Delete' && el.selectionStart < PREFIX.length)) {
+        e.preventDefault();
+        try { el.setSelectionRange(PREFIX.length, PREFIX.length); } catch {}
+      }
+    });
+
+    el.addEventListener('click', () => {
+      if (el.selectionStart < PREFIX.length) {
+        try { el.setSelectionRange(PREFIX.length, PREFIX.length); } catch {}
+      }
+    });
+
+    // Метод для внешней валидации перед сабмитом
+    el._validate = () => {
+      const ok = isValid();
+      setError(!ok);
+      return ok;
+    };
+  }
+
+  // === Логика загрузки фото и сабмита ===
+  const form = document.getElementById('orderForm');
+  const fileInput = document.getElementById('photos');
+  const fileZone = document.getElementById('fileZone');
+  const preview = document.getElementById('preview');
+  const countEl = document.getElementById('count');
+  const submitBtn = document.getElementById('submitBtn');
+  const statusEl = document.getElementById('status');
+  const progress = document.getElementById('progress');
+  const progressBar = document.getElementById('progressBar');
+
+  let files = [];
+
+  ['dragenter', 'dragover'].forEach(ev =>
+    fileZone.addEventListener(ev, e => { e.preventDefault(); fileZone.classList.add('drag'); }));
+  ['dragleave', 'drop'].forEach(ev =>
+    fileZone.addEventListener(ev, e => { e.preventDefault(); fileZone.classList.remove('drag'); }));
+  fileZone.addEventListener('drop', e => { if (e.dataTransfer?.files) addFiles(e.dataTransfer.files); });
+  fileInput.addEventListener('change', e => { addFiles(e.target.files); fileInput.value = ''; });
+
+  function addFiles(list) {
+    for (const f of list) {
+      if (files.length >= MAX_FILES) {
+        const msg = (cfg.tooManyFilesError || 'Максимум {max} фото').replace('{max}', MAX_FILES);
+        showFileError(msg);
+        break;
+      }
+      if (!f.type.startsWith('image/')) continue;
+      if (f.size > MAX_FILE_SIZE) {
+        const msg = (cfg.tooLargeFileError || 'Файл «{name}» больше {size} МБ — пропущен')
+          .replace('{name}', f.name).replace('{size}', cfg.limits.maxFileSizeMB);
+        showFileError(msg);
+        continue;
+      }
+      files.push(f);
+    }
+    renderPreview();
+  }
+
+  let fileErrorTimer;
+  function showFileError(msg) {
+    const el = document.getElementById('fileError');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(fileErrorTimer);
+    fileErrorTimer = setTimeout(() => el.classList.remove('show'), 5000);
+  }
+
+  function renderPreview() {
+    preview.innerHTML = '';
+    files.forEach((f, i) => {
+      const item = document.createElement('div');
+      item.className = 'preview-item';
+      const img = document.createElement('img');
+      // Кешируем ObjectURL на файле — иначе при перерисовке предпросмотр исчезает
+      if (!f._previewUrl) f._previewUrl = URL.createObjectURL(f);
+      img.src = f._previewUrl;
+      img.loading = 'lazy';
+      const btn = document.createElement('button');
+      btn.type = 'button'; btn.textContent = '×';
+      btn.onclick = () => {
+        const removed = files.splice(i, 1)[0];
+        if (removed && removed._previewUrl) URL.revokeObjectURL(removed._previewUrl);
+        renderPreview();
+      };
+      item.appendChild(img); item.appendChild(btn);
+      preview.appendChild(item);
+    });
+    countEl.textContent = files.length
+      ? (cfg.selectedCountText || 'Выбрано: {count} из {max}')
+          .replace('{count}', files.length).replace('{max}', MAX_FILES)
+      : '';
+  }
+
+  function showStatus(msg, type) {
+    statusEl.textContent = msg;
+    statusEl.className = `status show ${type}`;
+  }
+
+  // Любое редактирование формы убирает «висящее» сообщение об ошибке
+  // (но не на input type=file — иначе ошибки про лимит фото мгновенно гаснут)
+  form.addEventListener('input', (e) => {
+    if (e.target?.type === 'file') return;
+    if (statusEl.classList.contains('error')) statusEl.className = 'status';
+  });
+  form.addEventListener('change', (e) => {
+    if (e.target?.type === 'file') return;
+    if (statusEl.classList.contains('error')) statusEl.className = 'status';
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    statusEl.className = 'status';
+
+    // Валидация телефонов
+    let allPhonesValid = true;
+    let firstInvalidEl = null;
+    for (const f of cfg.fields) {
+      if (f.type === 'tel') {
+        const el = document.getElementById('f_' + f.id);
+        if (el && el._validate && !el._validate()) {
+          allPhonesValid = false;
+          if (!firstInvalidEl) firstInvalidEl = el;
+        }
+      }
+    }
+    if (!allPhonesValid) {
+      showStatus(cfg.phoneSubmitError || 'Проверьте поле телефона', 'error');
+      firstInvalidEl?.focus();
+      return;
+    }
+
+    if (files.length === 0) { showFileError(cfg.noPhotosError || 'Прикрепите хотя бы одно фото'); return; }
+
+    submitBtn.disabled = true;
+
+    // Опциональное мягкое сжатие — компромисс между качеством и надёжностью передачи.
+    // Включается через cfg.autoCompress (по умолчанию true, мягкие настройки).
+    let filesToSend = files;
+    if (cfg.autoCompress) {
+      const COMPRESS_THRESHOLD = 3 * 1024 * 1024;
+      const maxSide = cfg.compressMaxSide || 4000;
+      const quality = (cfg.compressQuality || 95) / 100;
+
+      submitBtn.textContent = cfg.preparingText || 'Подготовка фото…';
+      const compressed = [];
+      for (const f of files) {
+        if (f.size > COMPRESS_THRESHOLD) {
+          try {
+            compressed.push(await compressImage(f, maxSide, quality));
+          } catch {
+            compressed.push(f);
+          }
+        } else {
+          compressed.push(f);
+        }
+      }
+      filesToSend = compressed;
+    }
+
+    submitBtn.textContent = cfg.sendingText || 'Отправляем…';
+    progress.classList.add('show');
+    progressBar.style.width = '0%';
+
+    // Хелпер: каждый раз строим FormData с нуля.
+    // Это важно при повторных попытках — некоторые браузеры «теряют» Blob-ы
+    // после неудачного аплоада, и повторная отправка того же FormData ничего не шлёт.
+    const buildFormData = () => {
+      const fd = new FormData();
+      for (const f of cfg.fields) {
+        const el = document.getElementById('f_' + f.id);
+        if (!el) continue;
+        let val = (f.type === 'checkbox') ? (el.checked ? 'on' : '') : el.value.trim();
+        fd.append(f.id, val);
+      }
+      filesToSend.forEach(f => fd.append('photos', f, f.name));
+      return fd;
+    };
+
+    // Авто-повтор на сетевой сбой — до 5 попыток
+    let attempt = 0;
+    const MAX_ATTEMPTS = 5;
+    let lastErr;
+    while (attempt < MAX_ATTEMPTS) {
+      attempt++;
+      try {
+        const result = await uploadWithProgress(buildFormData(), p => progressBar.style.width = `${p}%`);
+        if (result.ok) {
+          const msg = (cfg.successText || '✅ Заказ #{orderId} отправлен!')
+            .replace('{orderId}', result.orderId).replace('{count}', result.count);
+          showStatus(msg, 'success');
+          form.reset();
+          files.forEach(f => { if (f._previewUrl) URL.revokeObjectURL(f._previewUrl); });
+          files = []; renderPreview();
+          document.querySelectorAll('input[type="tel"]').forEach(el => el.value = '+380 ');
+          submitBtn.disabled = false;
+          submitBtn.textContent = cfg.submitText || 'Отправить';
+          setTimeout(() => progress.classList.remove('show'), 600);
+          return;
+        } else {
+          showStatus(`❌ ${result.error || cfg.genericSendError || 'Ошибка отправки'}`, 'error');
+          break;
+        }
+      } catch (err) {
+        lastErr = err;
+        if (attempt < MAX_ATTEMPTS) {
+          const tpl = cfg.retryingText || 'Повтор {attempt}…';
+          submitBtn.textContent = tpl
+            .replace('{attempt}', attempt)
+            .replace('{max}', MAX_ATTEMPTS - 1);
+          progressBar.style.width = '0%';
+
+          // Если сейчас offline — ждём online (но не дольше 5 сек),
+          // потом ВСЁ РАВНО ждём ещё 1.5 сек чтобы браузер успел восстановить соединения.
+          // navigator.onLine — это эвристика, ей нельзя доверять на 100%.
+          if (navigator.onLine === false) {
+            await new Promise(resolve => {
+              const onOnline = () => { window.removeEventListener('online', onOnline); resolve(); };
+              window.addEventListener('online', onOnline);
+              setTimeout(() => { window.removeEventListener('online', onOnline); resolve(); }, 5000);
+            });
+            await new Promise(r => setTimeout(r, 1500));
+          } else {
+            await new Promise(r => setTimeout(r, 800));
+          }
+        }
+      }
+    }
+    if (lastErr) showStatus(`❌ ${lastErr.message || cfg.genericSendError || 'Не удалось отправить'}`, 'error');
+
+    submitBtn.disabled = false;
+    submitBtn.textContent = cfg.submitText || 'Отправить';
+    setTimeout(() => progress.classList.remove('show'), 600);
+  });
+
+  // Сжатие изображения через Canvas (макс. сторона + качество).
+  // createImageBitmap с imageOrientation: 'from-image' автоматически применяет EXIF-поворот
+  // — иначе iPhone/Samsung фото бывают «боком».
+  async function compressImage(file, maxSide, quality) {
+    let source;
+    try {
+      // Современный путь: createImageBitmap с EXIF-ориентацией
+      source = await createImageBitmap(file, { imageOrientation: 'from-image' });
+    } catch {
+      // Fallback на <img> для старых браузеров
+      source = await loadImage(file);
+    }
+    const w = source.width, h = source.height;
+    const ratio = Math.min(1, maxSide / Math.max(w, h));
+    if (ratio === 1 && file.type === 'image/jpeg') {
+      try { source.close?.(); } catch {}
+      return file;
+    }
+    const newW = Math.max(1, Math.round(w * ratio));
+    const newH = Math.max(1, Math.round(h * ratio));
+    const canvas = document.createElement('canvas');
+    canvas.width = newW;
+    canvas.height = newH;
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(source, 0, 0, newW, newH);
+    try { source.close?.(); } catch {}
+    const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', quality));
+    if (!blob) throw new Error('compress failed');
+    const newName = file.name.replace(/\.[^.]+$/, '') + '.jpg';
+    return new File([blob], newName, { type: 'image/jpeg' });
+  }
+
+  function loadImage(file) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = URL.createObjectURL(file);
+    });
+  }
+
+  function uploadWithProgress(formData, onProgress) {
+    return new Promise(async (resolve, reject) => {
+      // Используем fetch вместо XHR — на мобильных Chrome он часто работает там, где XHR падает.
+      // Прогресс уплоада не отображаем, вместо этого показываем индикатор «идёт отправка».
+      const ctrl = new AbortController();
+      const timeoutMs = (cfg.uploadTimeoutSec || 300) * 1000;
+      const timeoutId = setTimeout(() => ctrl.abort('timeout'), timeoutMs);
+      onProgress(50); // визуально — «в процессе»
+
+      try {
+        const url = '/api/upload?t=' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+        const res = await fetch(url, {
+          method: 'POST',
+          body: formData,
+          signal: ctrl.signal,
+          cache: 'no-store',
+          credentials: 'omit',
+          keepalive: false,
+        });
+        clearTimeout(timeoutId);
+        onProgress(100);
+
+        if (res.status === 413) {
+          beaconLog({ event: '413', size: 0 });
+          reject(new Error(cfg.bodyTooLargeError || 'Файлы слишком большие.'));
+          return;
+        }
+        if (res.status >= 500) {
+          beaconLog({ event: 'http5xx', status: res.status });
+          const tpl = cfg.serverErrorText || 'Ошибка сервера ({status}). Попробуйте позже.';
+          reject(new Error(tpl.replace('{status}', res.status)));
+          return;
+        }
+        try {
+          const data = await res.json();
+          resolve(data);
+        } catch (e) {
+          beaconLog({ event: 'badjson', status: res.status });
+          reject(new Error(cfg.invalidResponseError || 'Неверный ответ сервера'));
+        }
+      } catch (err) {
+        clearTimeout(timeoutId);
+        if (err.name === 'AbortError' || ctrl.signal.aborted) {
+          beaconLog({ event: 'timeout', timeout: timeoutMs });
+          reject(new Error(cfg.timeoutErrorText || 'Слишком долгая загрузка.'));
+        } else {
+          beaconLog({ event: 'fetch_error', err: String(err?.message || err).slice(0, 200) });
+          reject(new Error(cfg.networkErrorText || 'Сеть недоступна'));
+        }
+      }
+    });
+  }
+
+  function beaconLog(info) {
+    try {
+      const data = {
+        ...info,
+        ua: navigator.userAgent,
+        online: navigator.onLine,
+        conn: navigator.connection?.effectiveType || 'n/a',
+        time: new Date().toISOString(),
+      };
+      const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+      navigator.sendBeacon('/api/clientlog', blob);
+    } catch {}
+  }
+
+  function escapeHtml(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function escapeAttr(s) { return escapeHtml(s); }
+  function stripEmoji(s) { return String(s ?? '').replace(/[\u{1F300}-\u{1FAFF}]/gu, '').trim(); }
+})();
+</script>
+</body>
+</html>
